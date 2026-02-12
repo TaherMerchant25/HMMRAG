@@ -61,18 +61,297 @@ VATRAG 2.0 is a novel RAG system that replaces traditional embedding-based simil
 ### Installation
 
 ```bash
-cd /home/taher/Taher_Codebase/VATRAG2.0
+# Clone the repository
+git clone https://github.com/TaherMerchant25/HMMRAG.git
+cd HMMRAG
 
-# Install dependencies (if using virtual environment)
-# pip install -r requirements.txt
+# Install dependencies
+pip install -r requirements.txt
 ```
+
+## 📋 Complete Workflow: From Scratch to Retrieval
+
+### Option 1: Build KG from Your Own Text
+
+**Step 1: Prepare Your Documents**
+
+Create a Python script or use the interactive demo:
+
+```python
+# my_documents.py
+documents = [
+    {
+        'id': 'doc1',
+        'text': 'Your document text here...'
+    },
+    {
+        'id': 'doc2', 
+        'text': 'Another document...'
+    }
+]
+```
+
+**Step 2: Build Knowledge Graph**
+
+```bash
+# Run the complete KG builder
+python kg_builder.py
+```
+
+Or programmatically:
+
+```python
+from kg_builder import KnowledgeGraphBuilder
+
+# Initialize builder
+builder = KnowledgeGraphBuilder()
+
+# Build from documents
+result = builder.build_from_documents(documents)
+
+# Save to disk
+builder.save(result, 'my_kg_output')
+```
+
+This will:
+1. **Chunk** documents (512 chars with 128 overlap)
+2. **Extract** triples using pattern matching
+3. **Resolve** entity duplicates
+4. **Build** taxonomy tree from IS-A relations
+5. **Create** LCA structure for O(1) queries
+
+**Output files:**
+- `my_kg_output/entities.jsonl` - Resolved entities
+- `my_kg_output/triples.jsonl` - Knowledge graph triples
+- `my_kg_output/taxonomy.json` - Hierarchical taxonomy
+- `my_kg_output/statistics.json` - Build statistics
+
+**Step 3: Query the Knowledge Graph**
+
+```python
+from pipeline import HierarchicalKGPipeline
+from lca_retrieval import LCABoundedRetrieval
+
+# Load the built KG
+pipeline = HierarchicalKGPipeline()
+pipeline.load('my_kg_output')
+
+# Query
+results = pipeline.query(
+    "What is the relationship between Einstein and quantum mechanics?",
+    top_k=10,
+    strategy='moderate'  # 0.5 similarity threshold
+)
+
+# Display results
+for result in results:
+    print(f"{result.name} (similarity: {result.similarity:.3f})")
+```
+
+---
+
+### Option 2: Build from Existing VATRAG Data
+
+If you already have VATRAG/LeanRAG triples:
+
+**Step 1: Use VATRAG Triple Extraction** (Optional)
+
+```bash
+# If you have raw documents, use VATRAG for initial processing
+cd ../VATRAG
+./run_file_chunk.sh  # Creates triples from documents
+
+# This produces: ckg_data/mix_chunk/entity.jsonl and relation.jsonl
+```
+
+**Step 2: Build Taxonomy from VATRAG Data**
+
+```bash
+cd ../HMMRAG
+
+# Build hierarchical taxonomy from VATRAG output
+python pipeline.py --mode build \
+  --input ../VATRAG/ckg_data/mix_chunk \
+  --output taxonomy_output
+```
+
+This will:
+1. Load `entity.jsonl` and `relation.jsonl`
+2. Convert to our triple format
+3. Build taxonomy tree (O(n), ~1 second)
+4. Create LCA structure (O(n log n))
+5. Save compact representation (~545 KB vs 14.5 MB)
+
+**Step 3: Query**
+
+```bash
+python pipeline.py --mode query \
+  --query "How did Einstein influence quantum mechanics?" \
+  --strategy moderate \
+  --top-k 20
+```
+
+---
+
+### Option 3: Quick Demo
+
+```bash
+# Run built-in demo with sample data
+python demo.py
+
+# Or run the KG builder demo
+python kg_builder.py
+```
+
+---
+
+## 🔧 File Execution Order
+
+For building a complete hierarchical KG from scratch:
+
+### 1. **Document Chunking** (if starting from raw text)
+```bash
+python -c "
+from chunker import DocumentChunker
+
+chunker = DocumentChunker(chunk_size=512, overlap=128)
+chunks = chunker.chunk_text(your_text, 'doc_id')
+"
+```
+
+### 2. **Triple Extraction** (extract knowledge)
+```bash
+python -c "
+from triple_extractor import TripleExtractor
+
+extractor = TripleExtractor()
+triples = extractor.extract_from_text(chunk_text, 'chunk_id')
+"
+```
+
+### 3. **Entity Resolution** (deduplicate)
+```bash
+python -c "
+from entity_resolver import EntityResolver
+
+resolver = EntityResolver()
+entities, resolved_triples = resolver.resolve_triples(triples)
+"
+```
+
+### 4. **Taxonomy Building** (create hierarchy)
+```bash
+python -c "
+from taxonomy_builder import TaxonomyBuilder
+
+builder = TaxonomyBuilder()
+builder.build_from_triples(resolved_triples)
+builder.save('taxonomy.json')
+"
+```
+
+### 5. **LCA Structure** (enable O(1) queries)
+```bash
+python -c "
+from sparse_table import EulerTourLCA
+
+lca_solver = EulerTourLCA(taxonomy_builder)
+lca_solver.build()
+"
+```
+
+### 6. **Retrieval** (query the KG)
+```bash
+python -c "
+from lca_retrieval import LCABoundedRetrieval
+
+retrieval = LCABoundedRetrieval(taxonomy, lca_solver)
+results = retrieval.retrieve('your query', top_k=10)
+"
+```
+
+**Or use the all-in-one pipeline:**
+
+```bash
+python kg_builder.py  # Runs steps 1-5 automatically
+```
+
+---
+
+## 🧪 Testing
+
+Run all tests to verify installation:
+
+```bash
+bash test_all.sh
+```
+
+Individual component tests:
+
+```bash
+# Test LCA implementation
+python sparse_table.py
+
+# Test Wu-Palmer similarity
+python wu_palmer.py
+
+# Test multimodal extraction
+python multimodal_extractor.py
+
+# Test chunking
+python chunker.py
+
+# Test triple extraction
+python triple_extractor.py
+
+# Test entity resolution
+python entity_resolver.py
+
+# Full pipeline demo
+python pipeline.py --mode demo
+```
+
+---
+
+## ⚙️ Configuration
+
+Edit `config.yaml` for custom settings:
+
+```yaml
+chunking:
+  chunk_size: 512
+  overlap: 128
+  min_chunk_size: 100
+
+extraction:
+  use_patterns: true
+  use_llm: false  # Set to true for LLM-based extraction
+
+taxonomy:
+  virtual_root: "ROOT"
+
+retrieval:
+  default_threshold: 0.5
+  strategies:
+    strict: 0.8      # Very close entities
+    moderate: 0.5    # Same category  
+    loose: 0.3       # Related domain
+    exploratory: 0.1 # Any connection
+
+multimodal:
+  enabled: true
+  image_captions: true
+  table_extraction: true
+```
+
+---
 
 ### Build Taxonomy from VATRAG Data
 
 ```bash
 # Build from existing VATRAG triple file
 python pipeline.py --mode build \
-  --input ../VATRAG/ckg_data/mix_chunk/new_triples_mix_chunk.jsonl \
+  --input ../VATRAG/ckg_data/mix_chunk \
   --output taxonomy_output
 ```
 
@@ -343,6 +622,19 @@ multimodal:
   table_extraction: true
 ```
 
+## � Documentation
+
+All documentation is in the [`docs/`](docs/) folder:
+
+- **[Architecture](docs/🏗️%20LeanRAG-MM%20Architecture.md)** - Complete system architecture and design
+- **[Novelty Analysis](docs/🔬%20Novelty%20Analysis:%20LeanRAG-MM%20with%20L.md)** - Comparison with LeanRAG and novel contributions
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Quick command reference
+- **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - Technical implementation details
+- **[Project Complete](docs/PROJECT_COMPLETE.md)** - Complete feature list and status
+- **[Contributing](docs/CONTRIBUTING.md)** - How to contribute
+- **[GitHub Setup](docs/GITHUB_SETUP.md)** - Repository setup guide
+- **[Error Fix Explanation](docs/ERROR_FIX_EXPLANATION.md)** - Common issues and fixes
+
 ## 📖 API Reference
 
 See individual module docstrings:
@@ -351,6 +643,10 @@ See individual module docstrings:
 - `taxonomy_builder.py` - Hierarchy construction
 - `lca_retrieval.py` - Retrieval algorithm
 - `multimodal_extractor.py` - Multimodal support
+- `chunker.py` - Document chunking
+- `triple_extractor.py` - Triple extraction
+- `entity_resolver.py` - Entity deduplication
+- `kg_builder.py` - Complete KG pipeline
 - `pipeline.py` - Main integration
 
 ## 🎓 Publication

@@ -1,12 +1,24 @@
-# VATRAG 2.0 Requirements
+# LeanRAG-MM (HMMRAG) Requirements
+# Minimal dependencies for core functionality
+
 # Core dependencies
 numpy>=1.24.0
 pyyaml>=6.0
 
 # Optional: for enhanced features
-# spacy>=3.5.0  # For better entity extraction
+# NLP and entity extraction
+# spacy>=3.5.0  # For advanced entity extraction
+# transformers>=4.30.0  # For LLM-based triple extraction
+
+# Multimodal support
 # pillow>=9.0.0  # For image processing
 # pandas>=1.5.0  # For table handling
+# pytesseract>=0.3.10  # For OCR
 
-# Development
+# Development and testing
 # pytest>=7.0.0  # For testing
+# black>=22.0.0  # Code formatting
+# flake8>=4.0.0  # Linting
+
+# Note: This implementation is designed to work with minimal dependencies.
+# For integration with original VATRAG/LeanRAG, refer to their requirements.

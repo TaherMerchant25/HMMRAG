@@ -14,7 +14,7 @@ setup(
     description="LCA-Optimized Multimodal Knowledge Graph Retrieval with Wu-Palmer Semantic Distance",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/leanrag-mm",
+    url="https://github.com/TaherMerchant25/HMMRAG",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
