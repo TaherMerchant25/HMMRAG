@@ -1,0 +1,39 @@
+# Hierarchical KG Configuration
+taxonomy:
+  virtual_root: "ROOT"
+  output_dir: "taxonomy_output"
+  
+# Retrieval settings
+retrieval:
+  default_threshold: 0.5
+  default_strategy: "moderate"  # strict, moderate, loose, exploratory
+  top_k: 20
+  max_depth_expansion: 3
+  include_ancestors: true
+
+# Wu-Palmer similarity thresholds
+thresholds:
+  strict: 0.8       # Very close (siblings, direct ancestors)
+  moderate: 0.5     # Same category
+  loose: 0.3        # Related domain
+  exploratory: 0.1  # Any connection
+
+# Multimodal settings
+multimodal:
+  enabled: true
+  image_captions: true
+  table_extraction: true
+  audio_transcripts: false  # Future feature
+
+# Performance
+performance:
+  enable_caching: true
+  cache_size: 1000
+  parallel_extraction: true
+  num_workers: 4
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "vatrag2.0.log"
+  console: true

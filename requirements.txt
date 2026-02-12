@@ -1,0 +1,12 @@
+# VATRAG 2.0 Requirements
+# Core dependencies
+numpy>=1.24.0
+pyyaml>=6.0
+
+# Optional: for enhanced features
+# spacy>=3.5.0  # For better entity extraction
+# pillow>=9.0.0  # For image processing
+# pandas>=1.5.0  # For table handling
+
+# Development
+# pytest>=7.0.0  # For testing
